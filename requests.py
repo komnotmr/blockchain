@@ -3,6 +3,8 @@
 import subprocess
 
 hosts = None
+file_pids='pids.file'
+file_ports='ports.file'
 
 def get_hosts(filename='./ports.file'):
     host='http://localhost:'
@@ -35,17 +37,50 @@ def mchain():
         subprocess.call(['curl', f'{hosts[inp]}{req_addr}'])
 
 def mnodes_register():
-	print('mnodes_register')
+    hosts = get_hosts()
+    t_p = '/nodes/register'
+    data = '{ "nodes" : [ '
+    data += f'"{hosts[0]}{t_p}"'
+    for i in range(1, len(hosts)):
+        data += f', "{hosts[i]}{t_p}"'
+    data += '] }'
+    print (data)
+    for i in range(len(hosts)):
+        print (hosts[i])
+        subprocess.call([
+            'curl',
+            '-X', 
+            'POST', 
+            '-H', 
+            'Content-Type:application/json', 
+            '-d', 
+            data,
+            f'{hosts[i]}{t_p}'
+            ])
+    print('mnodes_register')
 
 def mstart():
-	mkill()
-	print('START \nCount nodes:')
-	inp = int(input())
-	if(inp > 0):
-		subprocess.call(['./start.sh', str(inp)])
+    mkill()
+    print('START \nCount nodes:')
+    inp = int(input())
+    if(inp > 0):
+        subprocess.call(['./start.sh', str(inp)])
+    else:
+        print('invalid arguments')
+    mquit()
 
 def mkill():
-	subprocess.call(['./start.sh', '0', 'clean'])
+    try:
+        file = open(file_pids)
+    except IOError:
+        return
+
+    try:
+        file = open(file_ports)
+    except IOError:
+        return
+
+    subprocess.call(['./start.sh', '0', 'clean'])
 
 def mmine():
 	req_addr = '/mine?difficult='
@@ -72,7 +107,7 @@ def mconsensus():
 keys = ['start','kill','help', 'hosts', 'chain', 'mine','consensus','register','quit']
 info = ['-start nodes','-kill nodes','-for cat help', '-cat list of hosts',
     '-do chain request to target','-mine 1 block','-consensus use','-nodes-register', '-for quit']
-func = [mstart, mkill, mhelp, mhosts, mchain,mmine, mconsensus,mnodes_register, mquit]
+func = [mstart, mkill, mhelp, mhosts, mchain, mmine, mconsensus, mnodes_register, mquit]
 
 
 if __name__ == '__main__':
