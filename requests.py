@@ -34,23 +34,57 @@ def mchain():
         print(f'do {hosts[inp]}{req_addr}')
         subprocess.call(['curl', f'{hosts[inp]}{req_addr}'])
 
+def mnodes_register():
+	print('mnodes_register')
 
-keys = ['help', 'quit', 'hosts', 'chain', 'nodes-register']
-info = ['for cat help', 'for quit', 'cat list of hosts',
-    'do chain request to target', '']
-func = [mhelp, mquit, mhosts, mchain]
+def mstart():
+	mkill()
+	print('START \nCount nodes:')
+	inp = int(input())
+	if(inp > 0):
+		subprocess.call(['./start.sh', str(inp)])
+
+def mkill():
+	subprocess.call(['./start.sh', '0', 'clean'])
+
+def mmine():
+	req_addr = '/mine?difficult='
+	mhosts()
+	inp = int(input())
+	print('difficult: ')
+	dif = float(input())
+	if(dif < 0 or inp not in [ i for i in range(len(hosts))] ):
+		print('error')
+	else:
+		print(f'{hosts[inp]}{req_addr}{dif}')
+		subprocess.call(['curl', f'{hosts[inp]}{req_addr}{dif}'])
+
+def mconsensus():
+	req_addr = '/nodes/resolve'
+	mhosts()
+	inp = int(input())
+	if inp not in [ i for i in range(len(hosts))]:
+		print ('target not exist')
+	else:
+		print(f'do {hosts[inp]}{req_addr}')
+		subprocess.call(['curl', f'{hosts[inp]}{req_addr}'])
+
+keys = ['start','kill','help', 'hosts', 'chain', 'mine','consensus','register','quit']
+info = ['-start nodes','-kill nodes','-for cat help', '-cat list of hosts',
+    '-do chain request to target','-mine 1 block','-consensus use','-nodes-register', '-for quit']
+func = [mstart, mkill, mhelp, mhosts, mchain,mmine, mconsensus,mnodes_register, mquit]
 
 
 if __name__ == '__main__':
+    mstart()
     hosts = get_hosts()
-
     inp = ''
     while inp != 'q':
         inp = input()
         if inp in keys:
             func[keys.index(inp)]()
         else:
-            print ('invalid argument')
+            print ('invalid argument\nuse \"help\" for help')
 
         
         
