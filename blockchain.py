@@ -18,8 +18,15 @@ class Blockchain:
         self.chain = []
         self.nodes = set()
 
-        # Create the genesis block
-        self.new_block(previous_hash='1', proof=100)
+        block = {
+            'index': 1,
+            'timestamp': time(),
+            'transactions': [],
+            'proof': 100,
+            'previous_hash': 1,
+        }
+
+        self.chain.append(block)
 
     def register_node(self, address: str) -> None:
         """
@@ -108,7 +115,7 @@ class Blockchain:
             'timestamp': time(),
             'transactions': self.current_transactions,
             'proof': proof,
-            'previous_hash': previous_hash or self.hash(self.chain[-1]),
+            'previous_hash': self.hash(self.chain[-1]),
         }
 
         # Reset the current list of transactions
@@ -150,7 +157,7 @@ class Blockchain:
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
-    def proof_of_work(self, last_proof: int,  difficulty: float) -> int:
+    def proof_of_work(self, last_proof: int) -> int:
         """
         Simple Proof of Work Algorithm:
          - Find a number p' such that hash(pp') contains leading 4 zeroes, where p is the previous p'
@@ -159,8 +166,7 @@ class Blockchain:
         proof = 0
         while self.valid_proof(last_proof, proof) is False:
             proof += 1
-            sleep(difficulty)
-
+ 
         return proof
 
     @staticmethod
@@ -191,14 +197,10 @@ blockchain = Blockchain()
 @app.route('/mine', methods=['GET'])
 def mine():
 
-    ##---------- difficuty mine
-    difficulty = request.args.get('difficulty', default = 0, type = float)
-    ##----------
-
     # We run the proof of work algorithm to get the next proof...
     last_block = blockchain.last_block
     last_proof = last_block['proof']
-    proof = blockchain.proof_of_work(last_proof, difficulty)
+    proof = blockchain.proof_of_work(last_proof)
 
     # We must receive a reward for finding the proof.
     # The sender is "0" to signify that this node has mined a new coin.
