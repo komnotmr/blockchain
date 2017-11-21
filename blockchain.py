@@ -1,51 +1,37 @@
 #!/usr/bin/python3.6
 
+import requests
 import hashlib
 import json
-from time import time, sleep
+
 from typing import Any, Dict, List, Optional
-from urllib.parse import urlparse
-from uuid import uuid4
-
-
-import requests
 from flask import Flask, jsonify, request
-
+from urllib.parse import urlparse
+from time import time, sleep
+from uuid import uuid4
 
 class Blockchain:
     def __init__(self):
         self.current_transactions = []
         self.chain = []
         self.nodes = set()
-
+        self.init_first_block(1, 100, 0x0)
+    
+    def init_first_block(self, index=1, proof=100, previous_hash=1):
         block = {
-            'index': 1,
+            'index': index,
             'timestamp': time(),
             'transactions': [],
-            'proof': 100,
-            'previous_hash': 1,
+            'proof': proof,
+            'previous_hash': previous_hash,
         }
-
         self.chain.append(block)
 
     def register_node(self, address: str) -> None:
-        """
-        Add a new node to the list of nodes
-
-        :param address: Address of node. Eg. 'http://192.168.0.5:5000'
-        """
-
         parsed_url = urlparse(address)
         self.nodes.add(parsed_url.netloc)
 
     def valid_chain(self, chain: List[Dict[str, Any]]) -> bool:
-        """
-        Determine if a given blockchain is valid
-
-        :param chain: A blockchain
-        :return: True if valid, False if not
-        """
-
         last_block = chain[0]
         current_index = 1
 
@@ -68,13 +54,6 @@ class Blockchain:
         return True
 
     def resolve_conflicts(self) -> bool:
-        """
-        This is our consensus algorithm, it resolves conflicts
-        by replacing our chain with the longest one in the network.
-
-        :return: True if our chain was replaced, False if not
-        """
-
         neighbours = self.nodes
         new_chain = None
 
@@ -102,14 +81,6 @@ class Blockchain:
         return False
 
     def new_block(self, proof: int, previous_hash: Optional[str]) -> Dict[str, Any]:
-        """
-        Create a new Block in the Blockchain
-
-        :param proof: The proof given by the Proof of Work algorithm
-        :param previous_hash: Hash of previous Block
-        :return: New Block
-        """
-
         block = {
             'index': len(self.chain) + 1,
             'timestamp': time(),
@@ -117,7 +88,6 @@ class Blockchain:
             'proof': proof,
             'previous_hash': self.hash(self.chain[-1]),
         }
-
         # Reset the current list of transactions
         self.current_transactions = []
 
@@ -125,14 +95,6 @@ class Blockchain:
         return block
 
     def new_transaction(self, sender: str, recipient: str, amount: int) -> int:
-        """
-        Creates a new transaction to go into the next mined Block
-
-        :param sender: Address of the Sender
-        :param recipient: Address of the Recipient
-        :param amount: Amount
-        :return: The index of the Block that will hold this transaction
-        """
         self.current_transactions.append({
             'sender': sender,
             'recipient': recipient,
@@ -147,22 +109,11 @@ class Blockchain:
 
     @staticmethod
     def hash(block: Dict[str, Any]) -> str:
-        """
-        Creates a SHA-256 hash of a Block
-
-        :param block: Block
-        """
-
         # We must make sure that the Dictionary is Ordered, or we'll have inconsistent hashes
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
     def proof_of_work(self, last_proof: int) -> int:
-        """
-        Simple Proof of Work Algorithm:
-         - Find a number p' such that hash(pp') contains leading 4 zeroes, where p is the previous p'
-         - p is the previous proof, and p' is the new proof
-        """
         proof = 0
         while self.valid_proof(last_proof, proof) is False:
             proof += 1
@@ -171,18 +122,9 @@ class Blockchain:
 
     @staticmethod
     def valid_proof(last_proof: int, proof: int) -> bool:
-        """
-        Validates the Proof
-
-        :param last_proof: Previous Proof
-        :param proof: Current Proof
-        :return: True if correct, False if not.
-        """
-
         guess = f'{last_proof}{proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == "0000"
-
 
 # Instantiate the Node
 app = Flask(__name__)
